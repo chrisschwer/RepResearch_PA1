@@ -21,7 +21,12 @@ Each observation has a row, with the date in column *date*, the interval in colu
 
 ## What is mean total number of steps taken per day?
 
+Using the *data.table* package, so in case it is not pre-installed, installing it.
 
+```{r}
+install.packackages("data.table")
+library(data.table)
+```
 
 
 ## What is the average daily activity pattern?
