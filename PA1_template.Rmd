@@ -3,9 +3,24 @@
 
 ## Loading and preprocessing the data
 
+First we need to unzip the file *"activity.zip"*, then we can read it into a data frame *df*.
 
+```{r}
+unzip ("activity.zip")
+df <- read.csv("activity.csv")
+```
+
+Looking at the summary and the first few lines of the data, we see that the format need not be changed for the analyses below.
+
+```{r}
+summary (df)
+head(df)
+```
+
+Each observation has a row, with the date in column *date*, the interval in column *interval* and the number of steps in the first column *steps*. The position is unconventional, but will not hinder our analysis.
 
 ## What is mean total number of steps taken per day?
+
 
 
 
