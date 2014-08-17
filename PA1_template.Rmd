@@ -10,31 +10,125 @@ unzip ("activity.zip")
 df <- read.csv("activity.csv")
 ```
 
-Looking at the summary and the first few lines of the data, we see that the format need not be changed for the analyses below.
+We are converting the dates to *date values*.
 
 ```{r}
-summary (df)
-head(df)
+df$date <- as.Date(df$date)
 ```
 
-Each observation has a row, with the date in column *date*, the interval in column *interval* and the number of steps in the first column *steps*. The position is unconventional, but will not hinder our analysis.
+The intervals are integers. However, they are formatted such that the last two digits give the minutes of the interval, while the prior digits give the hour. We convert them such that they are converted to an integer representing the number of minutes until the start of that interval.
+
+```{r}
+df$interval <- floor(df$interval/100)*60+(df$interval%%100)
+```
+
+
+
 
 ## What is mean total number of steps taken per day?
 
-Using the *data.table* package, so in case it is not pre-installed, installing it.
+First we extract the distinct values for date.
 
 ```{r}
-install.packackages("data.table")
-library(data.table)
+dates <- factor(df$date)
+```
+
+We can than add up the steps by day, using *tapply*, removing missing values.
+
+```{r}
+byDates <- tapply(df$steps, dates, sum, na.rm=TRUE)
+```
+
+And then we produce the histogram.
+
+```{r}
+library(ggplot2)
+qplot(x=as.Date(names(byDates)), y=byDates, geom="histogram", stat="identity", xlab="Date", ylab="Steps", 
+      main="Acitvity by Date", axis = FALSE)
+```
+
+Now all is left in this part is to report the daily *mean* and *median* steps taken.
+
+```{r}
+mean(byDates)
+median(byDates)
 ```
 
 
 ## What is the average daily activity pattern?
 
+This is similar to the previous exercise. We extract the factors, compute the averages and plot them.
 
+```{r}
+intervals <- factor(df$interval)
+byIntervals <- tapply(df$steps, intervals, mean, na.rm=TRUE)
+qplot(x=as.integer(names(byIntervals)), y=byIntervals, geom="line", 
+      stat="identity", xlab="Interval", 
+      ylab="Steps", main="Daily Activity Pattern")
+```
+
+In order to get the interval with the maximum number of steps, we use *which.max*.
+
+```{r}
+which.max(byIntervals)
+```
+
+Interpretation of result: the 104th value, which contains interval **515** represents the maximum average number of steps taken.
 
 ## Imputing missing values
 
+First we create a second data frame *df2* to be manipulated.
+
+```{r}
+df2 <- df
+```
+
+We create a vector *missing* that is true for the missing value. We sum *missing* to calculate the total number of missing values. 
+
+```{r}
+missing <- is.na(df2$steps)
+```
+
+We then use the averages for the respective interval to fill the data. This seems to be a reasonable approach.
+
+```{r}
+df2$steps[missing] <- floor(byIntervals[df2$interval[missing]/5+1])
+sum(is.na(df2$steps))
+```
+
+We can now re-create the by date histogram and analysis on the manipulated data frame *df2*.
+
+```{r}
+byDates2 <- tapply(df2$steps, dates, sum)
+mean(byDates)
+median(byDates)
+qplot(x=as.Date(names(byDates2)), y=byDates2, geom="histogram", stat="identity", xlab="Date", ylab="Steps", 
+      main="Acitvity by Date", axis = FALSE)
+
+```
+
+Median and mean did not change, the impact of imputing missing data on the estimates of the total daily number of steps is small. 
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+First we need to create a new variable *wd* which is *TRUE* if the date is a weekday, and *FALSE* if it is a weekend.
+
+```{r}
+wd <- (as.POSIXlt(df$date)$wday>0)&(as.POSIXlt(df$date)$wday<6)
+df <- cbind(df, wd)
+```
+
+We can than recalculate the interval means using a list of factors.
+
+```{r}
+intervals <- factor(df$interval)
+wds <- factor(df$wd)
+byIntervals <- tapply(df$steps, list(intervals, wds), mean, na.rm=TRUE)
+qplot(x=as.integer(names(byIntervals[,2])), y=byIntervals[,2], geom="line", 
+      stat="identity", xlab="Interval", 
+      ylab="Steps", main="Daily Activity Pattern - Weekdays")
+qplot(x=as.integer(names(byIntervals[,1])), y=byIntervals[,1], geom="line", 
+      stat="identity", xlab="Interval", 
+      ylab="Steps", main="Daily Activity Pattern - Weekends")
+```
